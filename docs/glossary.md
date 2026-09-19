@@ -17,8 +17,20 @@ Each entry says which chapter introduces it and, where useful, where it lives in
 ### convention plugin
 A Gradle plugin written in `buildSrc` that applies a bundle of settings to any module that names it (`chargemon.java-library`, `chargemon.flink-app`, `chargemon.spring-app`). Chapter 03. See [buildSrc/src/main/kotlin](../buildSrc/src/main/kotlin).
 
+### enum
+A Java type with a fixed list of named values (`Direction.STATION_TO_CSMS`). A `switch` over an enum needs no `default` when every value is listed. [Java tutorial 03](java-tutorial/03-packages-imports-enums.md). See [Direction](../ocpp-model/src/main/java/com/chargemon/ocpp/model/Direction.java).
+
 ### Flyway
 Database migration tool. Runs numbered SQL files (`V001__stations.sql` …) exactly once, in order, and records them in a history table. Chapter 03. See [schema/src/main/resources/db/migration](../schema/src/main/resources/db/migration).
+
+### functional interface
+An interface with exactly one abstract method, so a lambda (`path -> Optional.empty()`) or method reference (`found::add`) can implement it in place. `Function`, `Predicate`, `Supplier` and this repo's `Fact` are examples. [Java tutorial 11](java-tutorial/11-lambdas-and-streams.md).
+
+### generics
+Type parameters in angle brackets: `List<String>`, `Result<T, E>`, `Evaluator<S extends RuleSpec>`, `List<Evaluator<?>>`. They let the compiler check element and value types instead of relying on casts. [Java tutorial 09](java-tutorial/09-generics.md).
+
+### immutable
+An object whose fields are all `final` and that offers no way to change them after construction. Records are immutable by construction; "changing" one means building a copy (`withAction`). Safe to share between threads and Flink operators. [Java tutorial 02](java-tutorial/02-classes-and-objects.md).
 
 ### Optional
 A Java container that holds either one value or nothing. Used instead of `null` for "may be absent" results. Chapter 02.

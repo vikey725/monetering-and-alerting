@@ -7,7 +7,9 @@ and the test libraries. Every construct is shown with a real type from the repo,
 chapter you can open any file under `src/main/java` and read it.
 
 **Prerequisites.** [Chapter 01](01-getting-started.md) so you have built the project once. No Java
-experience is assumed beyond "I have seen a class before".
+experience is assumed beyond "I have seen a class before". If that is not true for you, or this
+chapter feels too dense, do the [Java from zero tutorial](java-tutorial/README.md) first; it
+teaches every construct below with small runnable programs and points back to each section here.
 
 ## Concepts (from scratch)
 

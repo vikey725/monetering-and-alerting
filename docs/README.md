@@ -26,6 +26,10 @@ Every chapter has the same shape:
 
 Budget about 45-90 minutes per chapter including exercises. Read with the repo open in an editor.
 
+**New to Java?** Chapter 02 assumes you have seen a class before. If it does not, start with the
+[Java from zero tutorial](java-tutorial/README.md): thirteen 10-15 minute lessons, each with a
+runnable toy program, that teach every construct chapter 02 uses.
+
 ## Chapters
 
 | # | Chapter | Track | Goal | Prereqs |
@@ -60,7 +64,7 @@ Budget about 45-90 minutes per chapter including exercises. Read with the repo o
 01 → 02 (records and sealed interfaces only) → 10 → 11 → 12 → 17 (decode and correlate sections) → 20 (generator section)
 
 **I want to hack on this repo**
-01 → 02 → 03 → 04 → 13 → 14 → 15 → 16 → 11 → 12 → 06 → 07 → 08 → 17 → 18 → 19 → 20, with 05 and 09 on demand
+01 → [Java tutorial](java-tutorial/README.md) if needed → 02 → 03 → 04 → 13 → 14 → 15 → 16 → 11 → 12 → 06 → 07 → 08 → 17 → 18 → 19 → 20, with 05 and 09 on demand
 
 ## Chapter prerequisites
 
