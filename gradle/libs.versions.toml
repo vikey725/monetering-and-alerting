@@ -1,0 +1,80 @@
+[versions]
+java = "21"
+flink = "1.20.5"
+flinkKafka = "3.4.0-1.20"
+flinkJdbc = "3.4.0-1.20"
+springBoot = "3.5.16"
+springDependencyManagement = "1.1.7"
+jackson = "2.21.4"
+flyway = "11.20.3"
+postgresql = "42.7.13"
+slf4j = "2.0.17"
+logback = "1.5.38"
+junit = "5.14.4"
+assertj = "3.27.7"
+jqwik = "1.10.1"
+testcontainers = "1.21.4"
+wiremock = "3.13.2"
+greenmail = "2.1.13"
+resilience4j = "2.4.0"
+shadow = "8.3.11"
+picocli = "4.7.7"
+kafkaClients = "3.9.2"
+
+[libraries]
+# Flink
+flink-streaming = { module = "org.apache.flink:flink-streaming-java", version.ref = "flink" }
+flink-clients = { module = "org.apache.flink:flink-clients", version.ref = "flink" }
+flink-connector-base = { module = "org.apache.flink:flink-connector-base", version.ref = "flink" }
+flink-connector-kafka = { module = "org.apache.flink:flink-connector-kafka", version.ref = "flinkKafka" }
+flink-connector-jdbc-core = { module = "org.apache.flink:flink-connector-jdbc-core", version.ref = "flinkJdbc" }
+flink-connector-jdbc-postgres = { module = "org.apache.flink:flink-connector-jdbc-postgres", version.ref = "flinkJdbc" }
+flink-statebackend-rocksdb = { module = "org.apache.flink:flink-statebackend-rocksdb", version.ref = "flink" }
+flink-runtime-web = { module = "org.apache.flink:flink-runtime-web", version.ref = "flink" }
+flink-metrics-prometheus = { module = "org.apache.flink:flink-metrics-prometheus", version.ref = "flink" }
+flink-test-utils = { module = "org.apache.flink:flink-test-utils", version.ref = "flink" }
+flink-streaming-tests = { module = "org.apache.flink:flink-streaming-java", version.ref = "flink" }
+flink-runtime-tests = { module = "org.apache.flink:flink-runtime", version.ref = "flink" }
+
+# Jackson
+jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310" }
+jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
+jackson-dataformat-smile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile" }
+
+# DB
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+
+# Kafka client (generator)
+kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafkaClients" }
+
+# Logging
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+# CLI
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+
+# Resilience
+resilience4j-spring-boot3 = { module = "io.github.resilience4j:resilience4j-spring-boot3", version.ref = "resilience4j" }
+
+# Test
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
+testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter" }
+testcontainers-kafka = { module = "org.testcontainers:kafka" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
+wiremock = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
+greenmail = { module = "com.icegreen:greenmail-junit5", version.ref = "greenmail" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

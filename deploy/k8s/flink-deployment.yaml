@@ -1,0 +1,41 @@
+# Flink Kubernetes Operator resource (application mode). Adjust image, storage and secrets per environment.
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: chargemon-processor
+spec:
+  image: ghcr.io/example/chargemon-flink:latest
+  flinkVersion: v1_20
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "4"
+    state.backend.type: rocksdb
+    state.backend.incremental: "true"
+    state.checkpoints.dir: s3://chargemon-flink/checkpoints
+    state.savepoints.dir: s3://chargemon-flink/savepoints
+    execution.checkpointing.interval: 60s
+    execution.checkpointing.min-pause: 30s
+    execution.checkpointing.unaligned: "true"
+    high-availability.type: kubernetes
+    high-availability.storageDir: s3://chargemon-flink/ha
+    restart-strategy.type: exponential-delay
+    metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
+    metrics.reporter.prom.port: "9249"
+    pipeline.generic-types: "false"
+  serviceAccount: flink
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          envFrom:
+            - secretRef: { name: chargemon-processor-env }   # KAFKA_BOOTSTRAP, DB_URL, DB_USER, DB_PASSWORD
+  jobManager:
+    resource: { memory: "2048m", cpu: 1 }
+  taskManager:
+    replicas: 8
+    resource: { memory: "8192m", cpu: 4 }
+  job:
+    jarURI: local:///opt/flink/usrlib/flink-processor.jar
+    entryClass: com.chargemon.flink.JobMain
+    parallelism: 32
+    upgradeMode: savepoint
+    state: running

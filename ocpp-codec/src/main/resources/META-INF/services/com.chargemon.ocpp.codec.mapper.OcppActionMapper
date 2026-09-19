@@ -1,0 +1,15 @@
+com.chargemon.ocpp.codec.mapper.v16.BootNotificationMapper16
+com.chargemon.ocpp.codec.mapper.v16.HeartbeatMapper16
+com.chargemon.ocpp.codec.mapper.v16.StatusNotificationMapper16
+com.chargemon.ocpp.codec.mapper.v16.StartTransactionMapper16
+com.chargemon.ocpp.codec.mapper.v16.StopTransactionMapper16
+com.chargemon.ocpp.codec.mapper.v16.MeterValuesMapper16
+com.chargemon.ocpp.codec.mapper.v16.AuthorizeMapper16
+com.chargemon.ocpp.codec.mapper.v201.BootNotificationMapper201
+com.chargemon.ocpp.codec.mapper.v201.HeartbeatMapper201
+com.chargemon.ocpp.codec.mapper.v201.StatusNotificationMapper201
+com.chargemon.ocpp.codec.mapper.v201.TransactionEventMapper201
+com.chargemon.ocpp.codec.mapper.v201.MeterValuesMapper201
+com.chargemon.ocpp.codec.mapper.v201.NotifyEventMapper201
+com.chargemon.ocpp.codec.mapper.v201.SecurityEventNotificationMapper201
+com.chargemon.ocpp.codec.mapper.v201.AuthorizeMapper201

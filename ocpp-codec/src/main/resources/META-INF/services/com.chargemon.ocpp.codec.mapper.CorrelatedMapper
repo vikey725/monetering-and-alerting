@@ -1,0 +1,5 @@
+com.chargemon.ocpp.codec.mapper.v16.BootCompletedMapper16
+com.chargemon.ocpp.codec.mapper.v16.SessionStartedMapper16
+com.chargemon.ocpp.codec.mapper.v16.AuthorizationResultMapper16
+com.chargemon.ocpp.codec.mapper.v201.BootCompletedMapper201
+com.chargemon.ocpp.codec.mapper.v201.AuthorizationResultMapper201

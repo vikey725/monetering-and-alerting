@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: notifier
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    consumer:
+      group-id: chargemon-notifier
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: manual
+      concurrency: ${NOTIFIER_CONCURRENCY:2}
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/chargemon}
+    username: ${DB_USER:chargemon}
+    password: ${DB_PASSWORD:chargemon}
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+
+notifier:
+  topic: ${TOPIC_ALERTS:alerts}
+  retry:
+    attempts: 4
+    initial-backoff: PT2S
+    multiplier: 2
+  fallback:
+    # severity -> channel refs used when a rule carries no channels
+    CRITICAL: ${NOTIFIER_FALLBACK_CRITICAL:}
+    HIGH: ${NOTIFIER_FALLBACK_HIGH:}
+    DEFAULT: ${NOTIFIER_FALLBACK_DEFAULT:}
+  slack:
+    # per-target incoming webhook URLs, e.g. "#ops": https://hooks.slack.com/services/...
+    webhooks: {}
+  pagerduty:
+    events-url: https://events.pagerduty.com/v2/enqueue
+    # per-target routing keys, e.g. svc-charging: <integration key>
+    routing-keys: {}
+  email:
+    from: ${NOTIFIER_EMAIL_FROM:alerts@chargemon.local}
+  webhook:
+    hmac-secret: ${NOTIFIER_WEBHOOK_SECRET:}
+    timeout: PT5S

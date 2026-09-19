@@ -1,0 +1,7 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:9
+  datasource:
+    url: jdbc:postgresql://localhost:5432/none
+notifier:
+  topic: alerts

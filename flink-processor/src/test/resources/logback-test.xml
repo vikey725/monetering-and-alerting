@@ -1,0 +1,12 @@
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder><pattern>%d{HH:mm:ss.SSS} %-5level %logger{40} - %msg%n</pattern></encoder>
+  </appender>
+  <logger name="org.apache.flink" level="WARN"/>
+  <logger name="org.apache.flink.runtime.executiongraph.ExecutionGraph" level="INFO"/>
+  <logger name="org.apache.flink.runtime.checkpoint.CheckpointCoordinator" level="INFO"/>
+  <logger name="org.apache.flink.runtime.jobmaster.JobMaster" level="INFO"/>
+  <logger name="org.apache.flink.streaming.runtime.tasks" level="INFO"/>
+  <logger name="com.chargemon" level="DEBUG"/>
+  <root level="WARN"><appender-ref ref="STDOUT"/></root>
+</configuration>
