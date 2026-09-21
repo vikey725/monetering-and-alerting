@@ -87,8 +87,9 @@ The deserializer
 [`source/KafkaRecordDeserializer.java`](../flink-processor/src/main/java/com/chargemon/flink/source/KafkaRecordDeserializer.java)
 "never fails": it wraps the raw bytes in
 [`model/KafkaRecord.java`](../flink-processor/src/main/java/com/chargemon/flink/model/KafkaRecord.java)
-(`key, value, timestamp, sourceRef`) where `sourceRef` is `topic-partition-offset`. Parsing
-happens one operator later, so a bad payload becomes a dead letter instead of killing the source.
+(`key, value, timestamp, sourceRef`) where `key` is the station id (decoded as UTF-8) and
+`sourceRef` is `topic-partition-offset`. Parsing happens one operator later, so a bad payload
+becomes a dead letter instead of killing the source.
 
 ### 2. `decode`: `FrameDecodeFunction` and `DeadLetter`
 
@@ -103,7 +104,7 @@ happens one operator later, so a bad payload becomes a dead letter instead of ki
 | Metrics | `framesDecoded`, `framesRejected` |
 
 ```java
-Result<RawEnvelope, String> env = envelopes.parse(rec.value(), rec.sourceRef());
+Result<RawEnvelope, String> env = envelopes.parse(rec.key(), rec.value(), rec.sourceRef());
 if (env instanceof Result.Err<RawEnvelope, String> err) {
     reject(ctx, rec, err.error());
     return;
@@ -111,9 +112,11 @@ if (env instanceof Result.Err<RawEnvelope, String> err) {
 RawEnvelope envelope = ((Result.Ok<RawEnvelope, String>) env).value();
 Result<RawFrame, String> frame = frames.parse(envelope.frame());
 ```
-(`FrameDecodeFunction.java:38-44`)
+(`FrameDecodeFunction.java:41-47`)
 
-Two parses, two chances to fail, both routed to the side output by `reject` (lines 53-57). The
+Note the first argument: the station id comes from the Kafka record key, not from the JSON body
+(chapter 04). A keyless record fails the envelope parse with `record key missing stationId`.
+Two parses, two chances to fail, both routed to the side output by `reject` (lines 56-60). The
 output record is
 [`model/DecodedFrame.java`](../flink-processor/src/main/java/com/chargemon/flink/model/DecodedFrame.java)
 `(RawEnvelope envelope, RawFrame frame)`. Why `setParallelism(raw.getParallelism())` in the

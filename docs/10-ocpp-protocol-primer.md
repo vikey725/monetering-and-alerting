@@ -415,10 +415,13 @@ second Heartbeat with id `"43"` and answer it with a CALLERROR whose code is `In
 whose description is `"clock unavailable"`. Finally wrap the first CALL in the envelope format used
 on the `common-broker` topic:
 
-```json
-{"stationId":"ST-1","ocppVersion":"2.0.1","direction":"STATION_TO_CSMS",
- "receivedAt":"2026-01-01T00:00:00Z","message":[2,"42","Heartbeat",{}]}
 ```
+key:   ST-1
+value: {"ocppVersion":"2.0.1","direction":"STATION_TO_CSMS",
+        "receivedAt":"2026-01-01T00:00:00Z","message":[2,"42","Heartbeat",{}]}
+```
+
+The station id is the Kafka record *key*, not a body field (chapter 04).
 
 **What you should observe.** The CALLRESULT and CALLERROR carry no action name; only the id
 `"42"` / `"43"` ties them to the request. The CALLERROR has five elements, the CALLRESULT three.

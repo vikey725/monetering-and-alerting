@@ -1,6 +1,7 @@
 # Local stack: Kafka (KRaft) + Postgres (logical replication) + Debezium + Flink + notifier + mailpit.
 # Build jars first:  ./gradlew build -x test
 # Then:              docker compose -f deploy/docker-compose.yml up --build
+# With traffic:      docker compose -f deploy/docker-compose.yml --profile load up --build
 name: chargemon
 
 x-db-env: &db-env
@@ -73,6 +74,16 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
     environment: *db-env
+    restart: "no"
+
+  rules-init:
+    image: postgres:16-alpine
+    depends_on:
+      schema: { condition: service_completed_successfully }
+    volumes: ["./local/sample-rules.sql:/sample-rules.sql:ro"]
+    environment:
+      PGPASSWORD: chargemon
+    command: ["psql", "-h", "postgres", "-U", "chargemon", "-d", "chargemon", "-v", "ON_ERROR_STOP=1", "-f", "/sample-rules.sql"]
     restart: "no"
 
   connect:
@@ -178,3 +189,21 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: debezium
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect:8083
+
+  # Opt-in load generator: docker compose -f deploy/docker-compose.yml --profile load up -d --build
+  generator:
+    build:
+      context: ..
+      dockerfile: deploy/docker/Dockerfile.java-app
+      args: { JAR: event-generator/build/libs/event-generator-all.jar }
+    profiles: ["load"]
+    depends_on:
+      topic-init: { condition: service_completed_successfully }
+      rules-init: { condition: service_completed_successfully }
+    command:
+      - --bootstrap=kafka:19092
+      - --stations=200
+      - --rate=100
+      - --profiles=normal,heartbeat-drop,stuck-preparing,zero-energy,boot-rejected,call-error
+      - --seed-master
+      - --speedup=10

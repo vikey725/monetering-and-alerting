@@ -19,7 +19,7 @@ class EnvelopeAndFrameParserTest {
     void parsesCanonicalEnvelope() {
         String json = Frames.envelopeJson(Frames.fromStation("ST-1", OcppVersion.V201, Frames.T0,
                 Frames.call("42", "Heartbeat", Frames.heartbeat())));
-        Result<RawEnvelope, String> r = envelopes.parse(json, "t-0-1");
+        Result<RawEnvelope, String> r = envelopes.parse("ST-1", json, "t-0-1");
         assertThat(r.isOk()).isTrue();
         RawEnvelope e = ((Result.Ok<RawEnvelope, String>) r).value();
         assertThat(e.stationId()).isEqualTo("ST-1");
@@ -33,21 +33,32 @@ class EnvelopeAndFrameParserTest {
 
     @Test
     void acceptsAliasFieldNamesAndStringFrame() {
-        String json = "{\"chargePointId\":\"CP-9\",\"protocol\":\"ocpp1.6\",\"dir\":\"inbound\",\"timestamp\":1735689600000,"
+        String json = "{\"protocol\":\"ocpp1.6\",\"dir\":\"inbound\",\"timestamp\":1735689600000,"
                 + "\"frame\":\"[3,\\\"7\\\",{\\\"status\\\":\\\"Accepted\\\"}]\"}";
-        Result<RawEnvelope, String> r = envelopes.parse(json, "x");
+        Result<RawEnvelope, String> r = envelopes.parse("CP-9", json, "x");
         assertThat(r.isOk()).as(r.toString()).isTrue();
         RawEnvelope e = ((Result.Ok<RawEnvelope, String>) r).value();
+        assertThat(e.stationId()).isEqualTo("CP-9");
         assertThat(e.ocppVersion()).isEqualTo(OcppVersion.V16);
         assertThat(frames.parse(e.frame()).isOk()).isTrue();
     }
 
     @Test
     void rejectsMalformed() {
-        assertThat(envelopes.parse("not json", "x").isOk()).isFalse();
-        assertThat(envelopes.parse("{\"stationId\":\"a\"}", "x").isOk()).isFalse();
+        assertThat(envelopes.parse("ST-1", "not json", "x").isOk()).isFalse();
+        assertThat(envelopes.parse("ST-1", "{}", "x").isOk()).isFalse();
         assertThat(frames.parse(Frames.JSON.createArrayNode().add(9).add("1").add("x")).isOk()).isFalse();
         assertThat(frames.parse(Frames.JSON.createArrayNode().add(2).add("1")).isOk()).isFalse();
+    }
+
+    @Test
+    void rejectsMissingRecordKey() {
+        String json = Frames.envelopeJson(Frames.fromStation("ST-1", OcppVersion.V201, Frames.T0,
+                Frames.call("42", "Heartbeat", Frames.heartbeat())));
+        assertThat(envelopes.parse(null, json, "x").isOk()).isFalse();
+        assertThat(envelopes.parse("  ", json, "x").isOk()).isFalse();
+        Result<RawEnvelope, String> r = envelopes.parse("", json, "x");
+        assertThat(((Result.Err<RawEnvelope, String>) r).error()).isEqualTo("record key missing stationId");
     }
 
     @Test

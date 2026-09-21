@@ -82,25 +82,34 @@ All paths are relative to `docs/`. The module is `ocpp-codec`; it depends on `oc
 ### Step 1: EnvelopeParser → RawEnvelope
 
 [../ocpp-codec/src/main/java/com/chargemon/ocpp/codec/envelope/EnvelopeParser.java](../ocpp-codec/src/main/java/com/chargemon/ocpp/codec/envelope/EnvelopeParser.java)
-is tolerant about key names so that an upstream producer change is a one-line edit here:
+takes the station id as a parameter (the caller hands it the Kafka record key; the body has no
+station field) and is tolerant about body field names so that an upstream producer change is a
+one-line edit here:
 
 ```java
-private static final List<String> STATION_KEYS = List.of("stationId", "chargePointId", "chargingStationId", "cpId");
+public Result<RawEnvelope, String> parse(String stationId, byte[] bytes, String sourceRef)
+```
+(`EnvelopeParser.java:40`)
+
+```java
 private static final List<String> VERSION_KEYS = List.of("ocppVersion", "protocol", "version");
 private static final List<String> DIRECTION_KEYS = List.of("direction", "dir");
 private static final List<String> TIME_KEYS = List.of("receivedAt", "timestamp", "ts");
 private static final List<String> FRAME_KEYS = List.of("message", "frame", "payload", "ocppMessage");
 ```
-(`EnvelopeParser.java:22`)
+(`EnvelopeParser.java:24`)
 
-Behaviour worth knowing: the frame may be a JSON array *or a string containing one* (some
-gateways double-encode); `direction` defaults to `STATION_TO_CSMS` when absent; `receivedAt`
-accepts ISO-8601 text or epoch milliseconds and defaults to `Instant.now()`; a missing station id
-or frame is an `Err`, never an exception. The result is
+Behaviour worth knowing: a blank or `null` station id (a keyless Kafka record) is
+`Err("record key missing stationId")` before the body is even read; the frame may be a JSON array
+*or a string containing one* (some gateways double-encode); `direction` defaults to
+`STATION_TO_CSMS` when absent; `receivedAt` accepts ISO-8601 text or epoch milliseconds and
+defaults to `Instant.now()`; a missing frame is an `Err`, never an exception. The result is
 [RawEnvelope](../ocpp-codec/src/main/java/com/chargemon/ocpp/codec/envelope/RawEnvelope.java)
-`(stationId, ocppVersion, direction, receivedAt, frame, sourceRef)`.
+`(stationId, ocppVersion, direction, receivedAt, frame, sourceRef)`, with `stationId` copied from
+the key.
 [EnvelopeAndFrameParserTest.java](../ocpp-codec/src/test/java/com/chargemon/ocpp/codec/envelope/EnvelopeAndFrameParserTest.java)
-feeds it `{"chargePointId":"CP-9","protocol":"ocpp1.6","dir":"inbound","timestamp":1735689600000,"frame":"[3,\"7\",{…}]"}`
+feeds it key `CP-9` and body
+`{"protocol":"ocpp1.6","dir":"inbound","timestamp":1735689600000,"frame":"[3,\"7\",{…}]"}`
 and expects success.
 
 ### Step 2: FrameParser → RawFrame

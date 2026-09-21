@@ -57,10 +57,9 @@ public final class Frames {
         return envelope(stationId, v, Direction.CSMS_TO_STATION, at, frame);
     }
 
-    /** JSON text of an envelope as it appears on common-broker. */
+    /** JSON body of an envelope as it appears on common-broker. The record key is {@code e.stationId()}; the body has no station id. */
     public static String envelopeJson(RawEnvelope e) {
         ObjectNode o = JSON.createObjectNode();
-        o.put("stationId", e.stationId());
         o.put("ocppVersion", e.ocppVersion().wire());
         o.put("direction", e.direction().name());
         o.put("receivedAt", e.receivedAt().toString());

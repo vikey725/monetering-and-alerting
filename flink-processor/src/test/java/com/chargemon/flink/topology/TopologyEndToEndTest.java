@@ -51,7 +51,7 @@ class TopologyEndToEndTest {
                 d.dbUrl(), d.dbUser(), d.dbPassword(), d.zeroEnergyWindows());
     }
 
-    private static List<AlertEvent> run(List<String> envelopes, List<RuleChange> rules, int expected,
+    private static List<AlertEvent> run(List<ListSources.Message> envelopes, List<RuleChange> rules, int expected,
                                         Predicate<List<AlertEvent>> done, Duration timeout) throws Exception {
         return run(new ListSources(envelopes, rules, 300), expected, done, timeout);
     }
@@ -87,14 +87,15 @@ class TopologyEndToEndTest {
         }
     }
 
-    private static String envelope(String station, OcppVersion v, Instant at, com.fasterxml.jackson.databind.JsonNode frame) {
-        return Frames.envelopeJson(Frames.fromStation(station, v, at, frame));
+    /** Keyed by station (the record key is the only place the station id lives). */
+    private static ListSources.Message envelope(String station, OcppVersion v, Instant at, com.fasterxml.jackson.databind.JsonNode frame) {
+        return ListSources.Message.of(Frames.fromStation(station, v, at, frame));
     }
 
     @Test
     void faultedStatusOpensAlertAndAvailableResolvesIt() throws Exception {
         Instant t = Instant.now();
-        List<String> envelopes = List.of(
+        List<ListSources.Message> envelopes = List.of(
                 envelope("ST-1", OcppVersion.V16, t, Frames.call("1", "StatusNotification", Frames.status16(1, "Faulted", "GroundFailure", t))),
                 envelope("ST-1", OcppVersion.V16, t, Frames.call("2", "StatusNotification", Frames.status16(1, "Available", "NoError", t))));
         List<RuleChange> rules = List.of(new RuleChange("faulted", RuleFixtures.faultedRule("faulted", "PT0S", "PT0S")));
@@ -113,7 +114,7 @@ class TopologyEndToEndTest {
     @Test
     void heartbeatAbsenceFiresAfterTimerAndGraceWindowIsHonoured() throws Exception {
         Instant t = Instant.now();
-        List<String> envelopes = List.of(
+        List<ListSources.Message> envelopes = List.of(
                 envelope("ST-2", OcppVersion.V201, t, Frames.call("1", "Heartbeat", Frames.heartbeat())));
         List<RuleChange> rules = List.of(new RuleChange("hb", """
             {"id":"hb","name":"No heartbeat","kind":"ABSENCE","spec":{"expectedAction":"Heartbeat","within":"PT1S"},
@@ -142,7 +143,7 @@ class TopologyEndToEndTest {
                 new GroupRecord("region:eu", "country:de", "EU", "region", Map.of(), false),
                 new GroupRecord("site:berlin", "region:eu", "Berlin", "site", Map.of(), false),
                 new GroupRecord("site:austin", null, "Austin", "site", Map.of(), false));
-        List<String> envelopes = List.of(
+        List<ListSources.Message> envelopes = List.of(
                 envelope("ST-EU", OcppVersion.V201, t, Frames.call("1", "StatusNotification", Frames.status201(1, 1, "Faulted", t))),
                 envelope("ST-US", OcppVersion.V201, t, Frames.call("2", "StatusNotification", Frames.status201(1, 1, "Faulted", t))));
         List<RuleChange> rules = List.of(new RuleChange("eu-fault", """
@@ -161,7 +162,7 @@ class TopologyEndToEndTest {
     @Test
     void threeZeroEnergySessionsRaiseAggregateRule() throws Exception {
         Instant t = Instant.now();
-        List<String> envelopes = new java.util.ArrayList<>();
+        List<ListSources.Message> envelopes = new java.util.ArrayList<>();
         for (int i = 0; i < 3; i++) {
             String tx = "tx-" + i;
             envelopes.add(envelope("ST-Z", OcppVersion.V201, t, Frames.call("s" + i, "TransactionEvent",
@@ -190,7 +191,7 @@ class TopologyEndToEndTest {
                 new StationRecord("G2", "n", "ACME", "X", "1", "2.0.1", Map.of(), Set.of("site:a"), false),
                 new StationRecord("G3", "n", "ACME", "X", "1", "2.0.1", Map.of(), Set.of("site:a"), false));
         var groups = List.of(new GroupRecord("site:a", null, "A", "site", Map.of(), false));
-        List<String> envelopes = List.of(
+        List<ListSources.Message> envelopes = List.of(
                 envelope("G1", OcppVersion.V201, t, Frames.call("1", "StatusNotification", Frames.status201(1, 1, "Faulted", t))),
                 envelope("G2", OcppVersion.V201, t, Frames.call("2", "StatusNotification", Frames.status201(1, 1, "Faulted", t))),
                 envelope("G1", OcppVersion.V201, t, Frames.call("3", "SecurityEventNotification", Frames.securityEvent201("FirmwareMismatch", t))));
@@ -224,7 +225,7 @@ class TopologyEndToEndTest {
     @Test
     void stuckPreparingFiresAfterMaxDurationPerConnector() throws Exception {
         Instant t = Instant.now();
-        List<String> envelopes = List.of(
+        List<ListSources.Message> envelopes = List.of(
                 envelope("ST-P", OcppVersion.V16, t, Frames.call("1", "StatusNotification", Frames.status16(1, "Preparing", "NoError", t))),
                 envelope("ST-P", OcppVersion.V16, t, Frames.call("2", "StatusNotification", Frames.status16(2, "Preparing", "NoError", t))),
                 envelope("ST-P", OcppVersion.V16, t, Frames.call("3", "StatusNotification", Frames.status16(2, "Charging", "NoError", t))));
@@ -238,10 +239,10 @@ class TopologyEndToEndTest {
     @Test
     void bootRejectedViaCorrelationAndMalformedGoesToDeadLetter() throws Exception {
         Instant t = Instant.now();
-        List<String> envelopes = List.of(
-                "this is not json",
+        List<ListSources.Message> envelopes = List.of(
+                new ListSources.Message("ST-3", "this is not json"),
                 envelope("ST-3", OcppVersion.V201, t, Frames.call("7", "BootNotification", Frames.boot201("ACME", "X", "1", "PowerUp"))),
-                Frames.envelopeJson(Frames.fromCsms("ST-3", OcppVersion.V201, t, Frames.callResult("7", Frames.bootResponse("Rejected", 30, t)))));
+                ListSources.Message.of(Frames.fromCsms("ST-3", OcppVersion.V201, t, Frames.callResult("7", Frames.bootResponse("Rejected", 30, t)))));
         List<RuleChange> rules = List.of(new RuleChange("boot", """
             {"id":"boot","name":"Boot rejected","kind":"EVENT",
              "spec":{"trigger":{"actions":["BootCompleted"]},"condition":{"op":"eq","field":"event.status","value":"REJECTED"}},

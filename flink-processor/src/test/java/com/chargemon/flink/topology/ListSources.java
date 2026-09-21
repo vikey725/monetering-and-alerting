@@ -5,6 +5,9 @@ import com.chargemon.flink.model.KafkaRecord;
 import com.chargemon.flink.model.RuleChange;
 import com.chargemon.flink.serde.JsonTypes;
 import com.chargemon.flink.source.Sources;
+import com.chargemon.ocpp.codec.envelope.RawEnvelope;
+import com.chargemon.ocpp.codec.fixtures.Frames;
+import java.io.Serializable;
 import com.chargemon.ocpp.model.station.GroupRecord;
 import com.chargemon.ocpp.model.station.StationRecord;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +32,14 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction;
  */
 final class ListSources implements Sources {
 
-    private final List<String> envelopes;
+    /** One common-broker record as the test feeds it: key = station id, json = envelope body (no station id inside). */
+    record Message(String key, String json) implements Serializable {
+        static Message of(RawEnvelope e) {
+            return new Message(e.stationId(), Frames.envelopeJson(e));
+        }
+    }
+
+    private final List<Message> envelopes;
     private final List<RuleChange> rules;
     private final List<StationRecord> stations;
     private final List<GroupRecord> groups;
@@ -38,11 +48,11 @@ final class ListSources implements Sources {
     static final Map<String, CountDownLatch> RULES_EMITTED = new ConcurrentHashMap<>();
     private final String gate = UUID.randomUUID().toString();
 
-    ListSources(List<String> envelopes, List<RuleChange> rules, long eventDelayMillis) {
+    ListSources(List<Message> envelopes, List<RuleChange> rules, long eventDelayMillis) {
         this(envelopes, rules, List.of(), List.of(), eventDelayMillis);
     }
 
-    ListSources(List<String> envelopes, List<RuleChange> rules, List<StationRecord> stations, List<GroupRecord> groups,
+    ListSources(List<Message> envelopes, List<RuleChange> rules, List<StationRecord> stations, List<GroupRecord> groups,
                 long eventDelayMillis) {
         this.envelopes = envelopes;
         this.rules = rules;
@@ -102,12 +112,12 @@ final class ListSources implements Sources {
 
     @SuppressWarnings("deprecation")
     private static final class OpenEndedSource implements SourceFunction<KafkaRecord> {
-        private final List<String> envelopes;
+        private final List<Message> envelopes;
         private final long delay;
         private final String gate;
         private volatile boolean running = true;
 
-        OpenEndedSource(List<String> envelopes, long delay, String gate) {
+        OpenEndedSource(List<Message> envelopes, long delay, String gate) {
             this.envelopes = envelopes;
             this.delay = delay;
             this.gate = gate;
@@ -118,8 +128,8 @@ final class ListSources implements Sources {
             RULES_EMITTED.get(gate).await(30, TimeUnit.SECONDS);
             Thread.sleep(delay);        // let the broadcast propagate through the graph
             int i = 0;
-            for (String json : envelopes) {
-                ctx.collect(new KafkaRecord(null, json.getBytes(StandardCharsets.UTF_8), System.currentTimeMillis(),
+            for (Message m : envelopes) {
+                ctx.collect(new KafkaRecord(m.key(), m.json().getBytes(StandardCharsets.UTF_8), System.currentTimeMillis(),
                         "test-0-" + (i++)));
             }
             while (running) {

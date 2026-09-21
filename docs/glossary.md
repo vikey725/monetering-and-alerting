@@ -301,7 +301,7 @@ Postgres table `notification_deliveries` keyed by (alert event id, channel). The
 An EVENT rule emits TRIGGERED only when its condition flips from false to true, not on every event where it is true. Repeated matching events are absorbed. Chapter 15.
 
 ### envelope
-The JSON record on the `common-broker` topic: station id, OCPP version, direction, receive time and the raw frame. Chapter 12. See [RawEnvelope](../ocpp-codec/src/main/java/com/chargemon/ocpp/codec/envelope/RawEnvelope.java).
+One record on the `common-broker` topic: the Kafka key is the station id; the JSON value holds OCPP version, direction, receive time and the raw frame (no station id in the body). Chapter 04, 12. See [RawEnvelope](../ocpp-codec/src/main/java/com/chargemon/ocpp/codec/envelope/RawEnvelope.java).
 
 ### Fact
 The rule engine's read-only view of an event plus context, accessed by dotted path (`event.status`, `station.vendor`, `agg.zeroEnergy.daily`, `now`). Chapter 12, 14. See [Fact](../rule-engine/src/main/java/com/chargemon/rules/condition/Fact.java).

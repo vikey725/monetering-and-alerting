@@ -83,8 +83,14 @@ re-triggers during suppression become `SUPPRESSED` and open a fresh grace window
 ```bash
 export JAVA_HOME=~/.jdks/jdk-21.0.12.1+1     # any JDK 21
 ./gradlew build                              # unit + MiniCluster + Testcontainers tests
-docker compose -f deploy/docker-compose.yml up -d --build
-docker compose -f deploy/docker-compose.yml exec -T postgres psql -U chargemon -d chargemon < deploy/local/sample-rules.sql
+docker compose -f deploy/docker-compose.yml --profile load up -d --build
+```
+
+The stack seeds `deploy/local/sample-rules.sql` itself (`rules-init`, idempotent). The `load` profile adds the
+`generator` container (200 stations, 100 envelopes/s, all fault profiles, 10x speedup); omit `--profile load`
+for a quiet stack and drive traffic by hand instead:
+
+```bash
 java -jar event-generator/build/libs/event-generator-all.jar \
      --stations 200 --rate 100 --profiles normal,heartbeat-drop,stuck-preparing,zero-energy,boot-rejected,call-error \
      --seed-master --speedup 10
@@ -106,6 +112,8 @@ application mode, RocksDB, S3 checkpoints).
 - Rules are pre-loaded from the compacted topic when an operator starts and then updated by broadcast,
   so there is no window where events are evaluated without rules.
 - The correlator parks responses that arrive before their CALL (different partitions) for the correlation timeout.
+- On `common-broker` the Kafka record **key is the station id** and the envelope body carries none. The key
+  also partitions the topic, so one station's frames stay in order; a record without a key is a dead letter.
 
 ## Known limitations
 

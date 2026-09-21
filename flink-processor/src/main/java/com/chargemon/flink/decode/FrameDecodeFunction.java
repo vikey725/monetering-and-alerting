@@ -14,7 +14,10 @@ import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
-/** Kafka bytes -> envelope + frame. Anything unparseable goes to the dead-letter side output. */
+/**
+ * Kafka bytes -> envelope + frame. The station id is the record key; the body carries none.
+ * Anything unparseable (including a keyless record) goes to the dead-letter side output.
+ */
 public final class FrameDecodeFunction extends ProcessFunction<KafkaRecord, DecodedFrame> {
 
     public static final OutputTag<DeadLetter> DEAD_LETTER = new OutputTag<>("dead-letter") {
@@ -35,7 +38,7 @@ public final class FrameDecodeFunction extends ProcessFunction<KafkaRecord, Deco
 
     @Override
     public void processElement(KafkaRecord rec, Context ctx, Collector<DecodedFrame> out) {
-        Result<RawEnvelope, String> env = envelopes.parse(rec.value(), rec.sourceRef());
+        Result<RawEnvelope, String> env = envelopes.parse(rec.key(), rec.value(), rec.sourceRef());
         if (env instanceof Result.Err<RawEnvelope, String> err) {
             reject(ctx, rec, err.error());
             return;

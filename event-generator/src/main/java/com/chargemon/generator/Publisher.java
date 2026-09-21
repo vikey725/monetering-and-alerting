@@ -27,6 +27,7 @@ final class Publisher implements AutoCloseable {
     }
 
     void envelope(String topic, RawEnvelope e) {
+        // Key is the station id (partitioning + the decoder's source of stationId); the body carries none.
         producer.send(new ProducerRecord<>(topic, e.stationId(), Frames.envelopeJson(e)));
     }
 

@@ -148,7 +148,11 @@ The generator's producer sets the station id as the record key:
 ```java
 producer.send(new ProducerRecord<>(topic, e.stationId(), Frames.envelopeJson(e)));
 ```
-(event-generator/src/main/java/com/chargemon/generator/Publisher.java:30)
+(event-generator/src/main/java/com/chargemon/generator/Publisher.java:31)
+
+The key is also the *only* place the station id lives: the JSON body has no `stationId` field, and
+the `decode` operator (chapter 17) reads it from `KafkaRecord.key`. A record with no key cannot be
+attributed to a station and goes to `dead-letter`.
 
 So every message of station `ST-17` lands on the same one of the 8 partitions, in send order. The
 Flink job continues that discipline: after `decode`, the stream is re-partitioned with
@@ -175,17 +179,19 @@ When the order still breaks, the correlator does not drop the response; it **par
 
 ### The envelope on `common-broker`
 
-Each value is a JSON object; the parser in
+Each record is a string key (the station id) plus a JSON object value; the parser in
 [EnvelopeParser.java](../ocpp-codec/src/main/java/com/chargemon/ocpp/codec/envelope/EnvelopeParser.java)
-documents the canonical shape and accepts a few field-name variants:
+documents the canonical shape and accepts a few field-name variants in the body:
 
 ```java
- * <pre>{"stationId":"ST-1","ocppVersion":"2.0.1","direction":"STATION_TO_CSMS",
- *       "receivedAt":"2026-01-01T00:00:00Z","message":[2,"42","Heartbeat",{}]}</pre>
+ * <pre>key:   ST-1
+ * value: {"ocppVersion":"2.0.1","direction":"STATION_TO_CSMS",
+ *         "receivedAt":"2026-01-01T00:00:00Z","message":[2,"42","Heartbeat",{}]}</pre>
 ```
-(ocpp-codec/src/main/java/com/chargemon/ocpp/codec/envelope/EnvelopeParser.java:17)
+(ocpp-codec/src/main/java/com/chargemon/ocpp/codec/envelope/EnvelopeParser.java:18)
 
-`direction` may be omitted (defaults to `STATION_TO_CSMS`) and `receivedAt` may be omitted
+The station id is never in the body; the parser takes it from the record key and returns an error
+for a blank or missing key. `direction` may be omitted (defaults to `STATION_TO_CSMS`) and `receivedAt` may be omitted
 (defaults to now). `message` is the untouched OCPP-J frame; `[2, ...]` is a CALL, `[3, ...]` a
 CALLRESULT, `[4, ...]` a CALLERROR ([chapter 10](10-ocpp-protocol-primer.md)).
 
@@ -347,7 +353,7 @@ Paste one line (use a `receivedAt` close to the current time so the event is not
 the example from the parser's javadoc uses `2026-01-01T00:00:00Z` and works too):
 
 ```
-ST-1|{"stationId":"ST-1","ocppVersion":"1.6","direction":"STATION_TO_CSMS","receivedAt":"2026-01-01T00:00:00Z","message":[2,"42","Heartbeat",{}]}
+ST-1|{"ocppVersion":"1.6","direction":"STATION_TO_CSMS","receivedAt":"2026-01-01T00:00:00Z","message":[2,"42","Heartbeat",{}]}
 ```
 
 Then press `Ctrl-D`. Open the Flink UI, click the job, select the `decode` box and open *Metrics*.
