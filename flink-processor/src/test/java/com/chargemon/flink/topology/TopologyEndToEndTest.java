@@ -112,6 +112,21 @@ class TopologyEndToEndTest {
     }
 
     @Test
+    void csmsResetOpensBootWindowSoSilenceDoesNotAlert() throws Exception {
+        Instant t = Instant.now();
+        List<ListSources.Message> envelopes = List.of(
+                envelope("ST-4", OcppVersion.V16, t, Frames.call("1", "Heartbeat", Frames.heartbeat())),
+                ListSources.Message.of(Frames.fromCsms("ST-4", OcppVersion.V16, t,
+                        Frames.call("c1", "Reset", Frames.obj("type", "Soft")))));
+        List<RuleChange> rules = List.of(new RuleChange("hb",
+                RuleFixtures.heartbeatAbsenceWithBootWindowRule("hb", "PT1S", "PT30S")));
+
+        List<AlertEvent> alerts = run(envelopes, rules, 1, a -> true, Duration.ofSeconds(4));
+
+        assertThat(alerts).isEmpty();                       // 1s heartbeat window passed; boot window still open
+    }
+
+    @Test
     void heartbeatAbsenceFiresAfterTimerAndGraceWindowIsHonoured() throws Exception {
         Instant t = Instant.now();
         List<ListSources.Message> envelopes = List.of(

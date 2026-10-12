@@ -36,6 +36,19 @@ public final class RuleFixtures {
             """.formatted(id, within);
     }
 
+    /** Heartbeat absence with a boot window: Reset/BootNotification extend the deadline to {@code bootWindow}. */
+    public static String heartbeatAbsenceWithBootWindowRule(String id, String within, String bootWindow) {
+        return """
+            {"id":"%1$s","name":"No heartbeat (boot aware)","kind":"ABSENCE",
+             "spec":{"expectedAction":"Heartbeat","within":"%2$s",
+                     "rearmOn":[{"action":"Reset","within":"%3$s"},
+                                {"action":"BootNotification","within":"%3$s"},
+                                {"action":"BootCompleted","when":{"op":"eq","field":"event.status","value":"ACCEPTED"},
+                                 "within":"%2$s"}]},
+             "graceWindow":"PT0S","suppressionWindow":"PT0S","severity":"CRITICAL","channels":["pagerduty:svc"]}
+            """.formatted(id, within, bootWindow);
+    }
+
     public static String stuckPreparingRule(String id, String max) {
         return """
             {"id":"%s","name":"Stuck preparing","kind":"STATE_DURATION",

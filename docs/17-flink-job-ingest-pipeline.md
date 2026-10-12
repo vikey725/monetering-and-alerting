@@ -369,7 +369,7 @@ flowchart LR
   C --> U1{{"union with StationRecord"}}
   ST[("stations topic")] --> U1
   U1 -- "keyBy stationId" --> E["enrich<br/>ValueState station<br/>ValueState announcedGroups<br/>broadcast GROUPS"]
-  G[("groups topic")] -. broadcast .-> E
+  G[("groups topic<br/>Debezium from station_groups")] -. broadcast .-> E
   E -- "side: MEMBER_DELTAS" --> MD["to stage 2 GroupAggregateOperator"]
   E -- "EnrichedEvent, keyBy stationId" --> S["sessions<br/>MapState sessionTracks"]
   S -- "SessionEnergy" --> F["SubjectFanOut<br/>stateless"]

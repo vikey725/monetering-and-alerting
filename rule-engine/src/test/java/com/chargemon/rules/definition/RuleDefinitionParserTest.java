@@ -30,6 +30,33 @@ class RuleDefinitionParserTest {
     }
 
     @Test
+    void parsesAbsenceRearmOn() {
+        RuleDefinition r = RuleFixtures.parse(RuleFixtures.heartbeatAbsenceWithBootWindowRule("b", "PT2M", "PT10M"));
+        RuleSpec.AbsenceSpec spec = (RuleSpec.AbsenceSpec) r.spec();
+        assertThat(spec.rearmOn()).extracting(RuleSpec.Rearm::action)
+                .containsExactly("Reset", "BootNotification", "BootCompleted");
+        assertThat(spec.rearmOn().get(0).within()).isEqualTo(Duration.ofMinutes(10));
+        assertThat(spec.rearmOn().get(0).when()).isNull();
+        assertThat(spec.rearmOn().get(2).when()).isNotNull();
+        assertThat(validator.validate(r).valid()).isTrue();
+
+        RuleSpec.AbsenceSpec plain = (RuleSpec.AbsenceSpec) RuleFixtures.parse(
+                RuleFixtures.heartbeatAbsenceRule("a", "PT10M")).spec();
+        assertThat(plain.rearmOn()).isEmpty();
+    }
+
+    @Test
+    void rejectsRearmWithoutWithinOrAction() {
+        RuleDefinition r = RuleFixtures.parse("""
+            {"id":"x","name":"x","kind":"ABSENCE","severity":"LOW",
+             "spec":{"expectedAction":"Heartbeat","within":"PT2M","rearmOn":[{"action":"Reset"},{"within":"PT1M"}]}}
+            """);
+        assertThat(validator.validate(r).errors()).containsExactlyInAnyOrder(
+                "ABSENCE.rearmOn[].within must be a positive duration",
+                "ABSENCE.rearmOn[].action is required");
+    }
+
+    @Test
     void parsesEveryKindAndDefaultsSubjectType() {
         RuleDefinition abs = RuleFixtures.parse(RuleFixtures.heartbeatAbsenceRule("a", "PT10M"));
         RuleDefinition stuck = RuleFixtures.parse(RuleFixtures.stuckPreparingRule("s", "PT30M"));

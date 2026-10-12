@@ -2,7 +2,6 @@ package com.chargemon.generator;
 
 import com.chargemon.ocpp.codec.envelope.RawEnvelope;
 import com.chargemon.ocpp.codec.fixtures.Frames;
-import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -31,19 +30,14 @@ final class Publisher implements AutoCloseable {
         producer.send(new ProducerRecord<>(topic, e.stationId(), Frames.envelopeJson(e)));
     }
 
-    void publishMasterData(Fleet fleet, String stationsTopic, String groupsTopic) {
-        for (Map.Entry<String, String> g : fleet.groups().entrySet()) {
-            String[] parts = g.getKey().split(":", 2);
-            String json = Frames.obj("groupId", g.getKey(), "parentId", g.getValue(), "name", parts[1], "level", parts[0]).toString();
-            producer.send(new ProducerRecord<>(groupsTopic, g.getKey(), json));
-        }
+    void publishStations(Fleet fleet, String stationsTopic) {
         for (StationSim s : fleet.stations()) {
             String json = Frames.obj("stationId", s.id(), "name", s.id(), "vendor", s.vendor(), "model", s.model(),
                     "firmware", "1.0.0", "ocppVersion", s.version().wire(), "groupIds", new String[] {s.site()}).toString();
             producer.send(new ProducerRecord<>(stationsTopic, s.id(), json));
         }
         producer.flush();
-        System.out.printf("seeded %d groups, %d stations%n", fleet.groups().size(), fleet.stations().size());
+        System.out.printf("seeded %d stations%n", fleet.stations().size());
     }
 
     void flush() {

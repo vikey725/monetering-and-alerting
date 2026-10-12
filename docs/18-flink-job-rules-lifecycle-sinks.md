@@ -254,15 +254,15 @@ document; a `null` value (tombstone) or `__deleted: "true"` becomes a delete.
 
 ### Sinks: `Sinks`, `ProductionSinks`, `JdbcSinks`, `JsonKafkaSink`
 
-[`sink/Sinks.java`](../flink-processor/src/main/java/com/chargemon/flink/sink/Sinks.java) has six
-methods: `alerts`, `deadLetters`, `stationMirror`, `groupMirror`, `aggregates`, `lateSessions`.
+[`sink/Sinks.java`](../flink-processor/src/main/java/com/chargemon/flink/sink/Sinks.java) has five
+methods: `alerts`, `deadLetters`, `stationMirror`, `aggregates`, `lateSessions`.
 [`sink/ProductionSinks.java`](../flink-processor/src/main/java/com/chargemon/flink/sink/ProductionSinks.java):
 
 | Stream | Destination | Key / statement |
 |---|---|---|
 | alerts | Kafka `alerts` **and** Postgres `alerts` | key `alertKey`; `ALERT_UPSERT` |
 | dead letters | Kafka `dead-letter` | key `sourceRef` |
-| stations, groups | Postgres via `CALL upsert_station(?::jsonb)` / `CALL upsert_group(?::jsonb)` | stored procedures from `V002__station_groups.sql` |
+| stations | Postgres via `CALL upsert_station(?::jsonb)` | stored procedure from `V002__station_groups.sql` (groups are not mirrored; `station_groups` is their source) |
 | aggregates | flatMap `aggregate-rows` to `WindowRow`, then two JDBC sinks | tumbling rows to `zero_energy_aggregates`, rolling rows to `zero_energy_rolling` |
 | late sessions | Kafka `late-events` | key `subjectId` |
 

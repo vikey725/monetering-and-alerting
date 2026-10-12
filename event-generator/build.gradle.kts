@@ -15,6 +15,7 @@ dependencies {
     implementation(testFixtures(project(":ocpp-codec")))
     implementation(libs.kafka.clients)
     implementation(libs.picocli)
+    implementation(libs.postgresql)
     runtimeOnly(libs.logback.classic)
 }
 

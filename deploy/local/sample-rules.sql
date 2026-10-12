@@ -4,7 +4,7 @@ INSERT INTO rules (id, name, kind, subject_type, spec, grace_window, suppression
  '{"trigger":{"actions":["StatusNotification"]},"condition":{"op":"eq","field":"event.status","value":"FAULTED"}}',
  'PT0S', 'PT10M', 'HIGH', '{email:ops@example.test}'),
 ('22222222-2222-2222-2222-222222222222', 'No heartbeat 2 min', 'ABSENCE', 'STATION',
- '{"expectedAction":"Heartbeat","within":"PT2M"}',
+ '{"expectedAction":"Heartbeat","within":"PT2M","rearmOn":[{"action":"Reset","within":"PT10M"},{"action":"FirmwareStatusNotification","when":{"op":"eq","field":"event.payload.status","value":"Installing"},"within":"PT15M"},{"action":"BootNotification","within":"PT5M"},{"action":"BootCompleted","when":{"op":"eq","field":"event.status","value":"PENDING"},"within":"PT10M"},{"action":"BootCompleted","when":{"op":"eq","field":"event.status","value":"ACCEPTED"},"within":"PT2M"}]}',
  'PT30S', 'PT15M', 'CRITICAL', '{email:oncall@example.test}'),
 ('33333333-3333-3333-3333-333333333333', 'Stuck preparing', 'STATE_DURATION', 'STATION',
  '{"enter":{"op":"eq","field":"event.status","value":"PREPARING"},"exit":{"op":"ne","field":"event.status","value":"PREPARING"},"maxDuration":"PT3M","scopeField":"event.connectorId"}',

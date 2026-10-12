@@ -128,7 +128,7 @@ Heartbeat is not a matching action, the second AVAILABLE finds no state to clear
 ### ABSENCE: re-arm a timer on every matching event
 
 [`AbsenceRuleEvaluator`](../rule-engine/src/main/java/com/chargemon/rules/eval/kinds/AbsenceRuleEvaluator.java),
-state `record State(Instant lastSeen, boolean triggered)`, scope `""`, one timer tagged
+state `record State(Instant lastSeen, boolean triggered, String armedBy, Instant armedAt)`, scope `""`, one timer tagged
 `absence`.
 
 - `onInput`: only `EVENT` inputs whose action equals `expectedAction` (or `"*"`), and only if
@@ -136,7 +136,7 @@ state `record State(Instant lastSeen, boolean triggered)`, scope `""`, one timer
   store `State(now, false)` and `schedule(TimerRef(rule, "", "absence"), now + within)`.
   Because the ref is the same, this replaces the old deadline: the timer is *re-armed*.
 - `onTimer`: if there is state and it is not yet triggered, store `State(lastSeen, true)` and
-  emit `TRIGGERED` with context `expectedAction`, `lastSeen`, `within`.
+  emit `TRIGGERED` with context `expectedAction`, `lastSeen`, `within`, `armedBy`, `armedAt`.
 
 ```mermaid
 sequenceDiagram
@@ -159,6 +159,50 @@ sequenceDiagram
 The test `absenceRuleTriggersOnTimerAndClearsOnReturn` checks the re-arm arithmetic: two
 heartbeats five minutes apart with `within = PT10M`; eleven minutes after the first there is
 still no due timer, because the second heartbeat moved the deadline.
+
+#### Boot window: `rearmOn`
+
+A station that reboots stops sending heartbeats. OCPP has no "boot started" message from the
+station, but the stream does show the boot lifecycle:
+
+- the CSMS sends `Reset` (outbound frames are ingested too, so it reaches the rules as a generic event);
+- in 1.6, `FirmwareStatusNotification` reports `Installing` before a firmware reboot;
+- the station sends `BootNotification`, then the correlator emits `BootCompleted` with `status`.
+
+`AbsenceSpec.rearmOn` is a list of `{action, when?, within}`. The first entry whose action matches
+(and whose `when` condition holds, if it has one) moves the deadline to `now + entry.within`.
+It differs from `expectedAction` in two ways:
+
+- it does **not** clear a triggered condition, because a boot message is not proof of health
+  (only the next heartbeat is);
+- it is ignored while the condition is triggered, so an open alert stays open until a heartbeat.
+
+It also arms the timer when there is no state yet. A station that boots and then never sends a
+heartbeat is caught.
+
+```mermaid
+sequenceDiagram
+  participant C as CSMS
+  participant S as Station
+  participant E as AbsenceRuleEvaluator
+  participant T as RuleTimers
+  S->>E: Heartbeat at 00:00
+  E->>T: schedule(absence, 00:02)
+  C->>E: Reset at 00:01 "rearmOn PT10M"
+  E->>T: schedule(absence, 00:11)
+  Note over S: rebooting, silent past 00:02, no alert
+  S->>E: BootNotification at 00:05 "rearmOn PT5M"
+  E->>T: schedule(absence, 00:10)
+  S->>E: BootCompleted ACCEPTED at 00:05 "rearmOn PT2M"
+  E->>T: schedule(absence, 00:07)
+  S->>E: Heartbeat at 00:06
+  E->>T: schedule(absence, 00:08)
+```
+
+An unplanned power loss sends no signal before the reboot, so the normal `within` (plus grace) applies
+and an alert may open. That is correct, because it is an outage. The later `BootNotification` does not
+resolve the alert; the first heartbeat after the boot does. The tests are in `StationEvaluatorsTest`
+(`resetOpensBootWindowInsteadOfNormalDeadline` and its neighbours).
 
 ### STATE_DURATION: one timer per scope
 

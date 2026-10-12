@@ -112,7 +112,7 @@ done
 | `dead-letter` | 1 | delete | Flink `decode`, for undecodable envelopes | humans |
 | `late-events` | 1 | delete | Flink zero-energy aggregator, for sessions too old to count | humans |
 | `stations` | 4 | compact | generator `--seed-master` or master-data system | Flink `enrich`, Postgres mirror |
-| `groups` | 4 | compact | same | Flink `enrich` (broadcast), Postgres mirror |
+| `groups` | 4 | compact | Debezium, from Postgres `station_groups` | Flink `enrich` (broadcast) |
 | `rules` | 4 | compact | Debezium | Flink rule and lifecycle operators (broadcast) |
 
 The job reads the names from environment variables with these defaults in
@@ -269,11 +269,21 @@ accepts all three shapes (unwrapped row, full Debezium envelope, or a plain docu
 `null` value or a `__deleted` row into a `RuleChange` with `ruleJson == null`, which means "delete".
 Column names are snake_case (`grace_window`); `RuleDefinitionParser.camelCaseKeys` converts them.
 
+**Groups use the same pattern.** The group hierarchy lives in the Postgres table `station_groups`
+(same database as `rules`). A second connector,
+[deploy/debezium/groups-connector.json](../deploy/debezium/groups-connector.json), registered as
+`groups-cdc`, captures `public.station_groups` with its own slot (`chargemon_groups`) and
+publication (`chargemon_groups_pub`). It needs its own connector because the key field differs:
+`transforms.key.field` is `group_id`, and `route` renames `cdc.public.station_groups` to `groups`.
+[GroupRecordDeserializer.java](../flink-processor/src/main/java/com/chargemon/flink/enrich/GroupRecordDeserializer.java)
+reads the snake_case columns and parses the `attributes` JSONB column, which Debezium sends as a
+JSON *string*.
+
 ### Inspecting topics
 
 **Kafka UI** at <http://localhost:8090>: *Topics* lists every topic with partition count and
 cleanup policy; click a topic, then *Messages*, to read records with key, value, partition and
-offset. The *Kafka Connect* tab shows the `rules-cdc` connector and its task state.
+offset. The *Kafka Connect* tab shows the `rules-cdc` and `groups-cdc` connectors and their task state.
 
 **Command line.** The `apache/kafka:3.9.1` image ships the scripts under `/opt/kafka/bin`. The
 broker listens on `kafka:19092` inside the compose network:

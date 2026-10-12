@@ -24,12 +24,30 @@ public sealed interface RuleSpec permits RuleSpec.EventSpec, RuleSpec.AbsenceSpe
         }
     }
 
-    /** Fires when {@code expectedAction} ("*" = any) is not seen for {@code within}. */
-    record AbsenceSpec(String expectedAction, Duration within, Condition onlyIf) implements RuleSpec {
+    /**
+     * Fires when {@code expectedAction} ("*" = any) is not seen for {@code within}.
+     *
+     * @param rearmOn inputs that move the deadline without proving liveness, e.g. a Reset or
+     *                BootNotification opening a longer "boot window"; first match wins
+     */
+    record AbsenceSpec(String expectedAction, Duration within, Condition onlyIf, List<Rearm> rearmOn)
+            implements RuleSpec {
+        public AbsenceSpec {
+            rearmOn = rearmOn == null ? List.of() : List.copyOf(rearmOn);
+        }
+
+        public AbsenceSpec(String expectedAction, Duration within, Condition onlyIf) {
+            this(expectedAction, within, onlyIf, List.of());
+        }
+
         @Override
         public RuleKind kind() {
             return RuleKind.ABSENCE;
         }
+    }
+
+    /** One {@link AbsenceSpec#rearmOn()} entry: on {@code action} (if {@code when} holds), deadline = now + {@code within}. */
+    record Rearm(String action, Condition when, Duration within) {
     }
 
     /**

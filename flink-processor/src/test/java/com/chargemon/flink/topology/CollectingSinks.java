@@ -5,7 +5,6 @@ import com.chargemon.flink.aggregate.LateSession;
 import com.chargemon.flink.decode.DeadLetter;
 import com.chargemon.flink.model.AggregateSnapshot;
 import com.chargemon.flink.sink.Sinks;
-import com.chargemon.ocpp.model.station.GroupRecord;
 import com.chargemon.ocpp.model.station.StationRecord;
 import java.util.List;
 import java.util.Map;
@@ -57,12 +56,6 @@ final class CollectingSinks implements Sinks {
     @Override
     public void stationMirror(DataStream<StationRecord> stations) {
         stations.addSink(new SinkFunction<>() {
-        });
-    }
-
-    @Override
-    public void groupMirror(DataStream<GroupRecord> groups) {
-        groups.addSink(new SinkFunction<>() {
         });
     }
 

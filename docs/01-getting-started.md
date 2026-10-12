@@ -164,14 +164,15 @@ every flag is an `@Option` field there. The flags and their defaults:
 |---|---|---|
 | `--bootstrap` | `localhost:9092` | Kafka address |
 | `--topic` | `common-broker` | where OCPP envelopes go |
-| `--stations-topic`, `--groups-topic` | `stations`, `groups` | where master data goes |
+| `--stations-topic` | `stations` | where station master data goes |
+| `--db-url`, `--db-user`, `--db-password` | `jdbc:postgresql://localhost:5432/chargemon`, `chargemon`, `chargemon` | Postgres that holds `station_groups` |
 | `--stations` | `100` | number of simulated stations |
 | `--rate` | `100` | target envelopes per second |
 | `--profiles` | `normal` | comma list of fault profiles (see below) |
 | `--v16-ratio` | `0.2` | fraction of stations speaking OCPP 1.6 (the rest speak 2.0.1) |
 | `--duration` | `PT0S` | ISO-8601 run time; `PT0S` means run forever |
 | `--speedup` | `1` | simulated seconds per wall-clock second |
-| `--seed-master` | `false` | publish station and group master data first |
+| `--seed-master` | `false` | write groups to Postgres and publish stations to Kafka first |
 | `--seed` | `42` | random seed, so runs are repeatable |
 
 The profiles are listed in the option's description string:
@@ -191,8 +192,9 @@ java -jar event-generator/build/libs/event-generator-all.jar \
      --seed-master --speedup 10
 ```
 
-Use `--seed-master` on the first run so that the `stations` and `groups` topics get filled; the
-job uses them to attach vendor, model and group information to each event. Stop the generator with
+Use `--seed-master` on the first run so that the `stations` and `groups` topics get filled
+(stations are published directly; groups are written to the Postgres table `station_groups` and
+Debezium copies them to `groups`); the job uses them to attach vendor, model and group information to each event. Stop the generator with
 `Ctrl-C`.
 
 ### Step 5: where to look

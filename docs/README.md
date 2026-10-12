@@ -54,6 +54,7 @@ runnable toy program, that teach every construct chapter 02 uses.
 | 18 | [Flink job: rules, lifecycle, sinks](18-flink-job-rules-lifecycle-sinks.md) | C Project | stage 1, lifecycle, stage 2, sinks, `JobMain`, end-to-end tests | 16, 17, 08 |
 | 19 | [Notifier (Spring Boot)](19-notifier-spring-boot.md) | C Project | Kafka listener, retries, routing, idempotent delivery, channels | 16, 04 |
 | 20 | [Deploy, generator, testing, extending](20-deploy-generator-testing-extending.md) | C Project | Operate the stack, simulate traffic, extend the system | 13, 17, 18, 19 |
+| 21 | [Kafka topic map](21-kafka-topic-map.md) | C Project | Every topic, its producer and consumer, step by step | 04, 13 |
 
 ## Learning paths
 
@@ -105,6 +106,8 @@ graph TD
   C13 --> C20[20 Deploy + extend]
   C18 --> C20
   C19 --> C20
+  C04 --> C21[21 Kafka topic map]
+  C13 --> C21
 ```
 
 ## References

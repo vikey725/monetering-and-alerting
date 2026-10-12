@@ -5,7 +5,6 @@ import com.chargemon.common.json.JsonMapperFactory;
 import com.chargemon.flink.config.JobConfig;
 import com.chargemon.flink.model.AggregateSnapshot;
 import com.chargemon.rules.window.WindowSpec;
-import com.chargemon.ocpp.model.station.GroupRecord;
 import com.chargemon.ocpp.model.station.StationRecord;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.sql.Timestamp;
@@ -120,10 +119,6 @@ public final class JdbcSinks {
 
     public JdbcSink<StationRecord> stationMirror() {
         return sink("CALL upsert_station(?::jsonb)", (ps, s) -> ps.setString(1, toJson(s)));
-    }
-
-    public JdbcSink<GroupRecord> groupMirror() {
-        return sink("CALL upsert_group(?::jsonb)", (ps, g) -> ps.setString(1, toJson(g)));
     }
 
     private <T> JdbcSink<T> sink(String sql, JdbcStatementBuilder<T> builder) {

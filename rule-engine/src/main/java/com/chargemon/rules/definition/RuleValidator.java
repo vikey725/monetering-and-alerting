@@ -42,6 +42,14 @@ public final class RuleValidator {
                 if (s.within() == null || s.within().isZero() || s.within().isNegative()) {
                     e.add("ABSENCE.within must be a positive duration");
                 }
+                for (RuleSpec.Rearm rearm : s.rearmOn()) {
+                    if (rearm.action() == null || rearm.action().isBlank()) {
+                        e.add("ABSENCE.rearmOn[].action is required");
+                    }
+                    if (rearm.within() == null || rearm.within().isZero() || rearm.within().isNegative()) {
+                        e.add("ABSENCE.rearmOn[].within must be a positive duration");
+                    }
+                }
             }
             case RuleSpec.StateDurationSpec s -> {
                 if (s.enter() == null) {

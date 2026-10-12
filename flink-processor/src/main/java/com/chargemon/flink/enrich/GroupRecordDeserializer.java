@@ -17,6 +17,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 public final class GroupRecordDeserializer implements KafkaRecordDeserializationSchema<GroupRecord> {
 
     private static final long serialVersionUID = 1L;
+    private static final ObjectMapper PARSER = JsonMapperFactory.standard();
     private transient ObjectMapper json;
 
     @Override
@@ -39,6 +40,13 @@ public final class GroupRecordDeserializer implements KafkaRecordDeserialization
         String id = first(n, "groupId", "group_id", "id");
         Map<String, String> attrs = new HashMap<>();
         JsonNode a = n.get("attributes");
+        if (a != null && a.isTextual()) {               // Debezium emits JSONB columns as JSON text
+            try {
+                a = PARSER.readTree(a.asText());
+            } catch (IOException e) {
+                a = null;
+            }
+        }
         if (a != null && a.isObject()) {
             a.properties().forEach(e -> attrs.put(e.getKey(), e.getValue().isValueNode() ? e.getValue().asText() : e.getValue().toString()));
         }

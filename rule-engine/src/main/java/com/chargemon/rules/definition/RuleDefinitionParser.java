@@ -10,6 +10,7 @@ import com.chargemon.common.time.Durations;
 import com.chargemon.rules.condition.Condition;
 import com.chargemon.rules.condition.ConditionParser;
 import com.chargemon.rules.definition.RuleSpec.AggregateSource;
+import com.chargemon.rules.definition.RuleSpec.Rearm;
 import com.chargemon.rules.definition.RuleSpec.Threshold;
 import com.chargemon.rules.definition.RuleSpec.Trigger;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -133,7 +134,7 @@ public final class RuleDefinitionParser {
             case EVENT -> new RuleSpec.EventSpec(trigger(s.get("trigger")), condition(s.get("condition")),
                     condition(s.get("clear")));
             case ABSENCE -> new RuleSpec.AbsenceSpec(s.path("expectedAction").asText("*"), duration(s, "within"),
-                    condition(s.get("onlyIf")));
+                    condition(s.get("onlyIf")), rearms(s.get("rearmOn")));
             case STATE_DURATION -> new RuleSpec.StateDurationSpec(condition(s.get("enter")), condition(s.get("exit")),
                     duration(s, "maxDuration"), s.hasNonNull("scopeField") ? s.get("scopeField").asText() : null);
             case SEQUENCE -> new RuleSpec.SequenceSpec(strings(s.get("allOf")), duration(s, "within"));
@@ -160,6 +161,16 @@ public final class RuleDefinitionParser {
         }
         return new Trigger(new HashSet<>(strings(t.get("actions"))),
                 t.hasNonNull("aggregate") ? t.get("aggregate").asText() : null);
+    }
+
+    private List<Rearm> rearms(JsonNode n) {
+        if (n == null || n.isNull()) {
+            return List.of();
+        }
+        List<Rearm> out = new ArrayList<>();
+        n.forEach(r -> out.add(new Rearm(r.hasNonNull("action") ? r.get("action").asText() : null,
+                condition(r.get("when")), duration(r, "within"))));
+        return out;
     }
 
     private Condition condition(JsonNode node) {

@@ -58,7 +58,7 @@ order is driven by health and completion conditions:
 | `postgres` | `postgres:16-alpine` with `wal_level=logical` | 5432 | health: `pg_isready` | tables and the Debezium source |
 | `schema` | [`Dockerfile.java-app`](../deploy/docker/Dockerfile.java-app) with `schema-all.jar`, one-shot | | postgres healthy | runs the Flyway migrations |
 | `connect` | `quay.io/debezium/connect:3.1` | 8083 | kafka healthy, schema completed | Kafka Connect worker |
-| `connector-init` | `curlimages/curl`, one-shot | | connect healthy | `PUT /connectors/rules-cdc/config` with `rules-connector.json` |
+| `connector-init` | `curlimages/curl`, one-shot | | connect healthy | `PUT /connectors/rules-cdc/config` with `rules-connector.json` and `PUT /connectors/groups-cdc/config` with `groups-connector.json` |
 | `jobmanager` | [`Dockerfile.flink`](../deploy/docker/Dockerfile.flink), `standalone-job --job-classname com.chargemon.flink.JobMain` | 8081 UI, 9249 Prometheus | topic-init and schema completed | the Flink job, `PARALLELISM=2`, RocksDB, checkpoints in `/tmp/flink-checkpoints` every 30 s |
 | `taskmanager` | same image | | jobmanager | 4 slots |
 | `notifier` | `Dockerfile.java-app` with `notifier.jar` | 8080 | topic-init and schema completed | fallback channels all `email:ops@example.test` |
@@ -231,10 +231,10 @@ extra(s, now, out);
 | `call-error` | as normal plus, every minute, CALL `NotifyChargingLimit` answered by CALLERROR `InternalError` | `extra` | CSMS call errors |
 
 CLI flags (all optional): `--bootstrap` (localhost:9092), `--topic` (common-broker),
-`--stations-topic`, `--groups-topic`, `--stations` (100), `--rate` envelopes/s (100),
+`--stations-topic`, `--db-url` / `--db-user` / `--db-password` (local `chargemon` Postgres), `--stations` (100), `--rate` envelopes/s (100),
 `--profiles` comma list (normal), `--v16-ratio` (0.2), `--duration` ISO-8601, `PT0S` = forever,
-`--speedup` simulated seconds per wall second (1), `--seed-master` publish stations and groups
-first (false), `--seed` (42). With `--speedup 10` a 4-minute session gap passes in 24 wall
+`--speedup` simulated seconds per wall second (1), `--seed-master` write groups to Postgres
+(`upsert_group`, Debezium carries them to `groups`) and publish stations first (false), `--seed` (42). With `--speedup 10` a 4-minute session gap passes in 24 wall
 seconds, so aggregate and absence rules fire in a demo; but note that heartbeat *absence* is
 judged by the Flink job in wall time, so a 2-minute rule still needs 2 real minutes of silence.
 

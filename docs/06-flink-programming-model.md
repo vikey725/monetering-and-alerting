@@ -255,8 +255,7 @@ flowchart TD
   SS["src: stations"] --> SM["stations -> postgres"]
   SS --> U1["union as StationStreamElement"]
   COR --> U1
-  SG["src: groups"] --> GM["groups -> postgres"]
-  SG -- "broadcast" --> ENR
+  SG["src: groups"] -- "broadcast" --> ENR
   U1 -- "keyBy stationId" --> ENR["enrich (KeyedBroadcastProcessFunction)"]
   ENR -- "side: member-deltas" --> GI
   ENR -- "keyBy stationId" --> SES["sessions"]

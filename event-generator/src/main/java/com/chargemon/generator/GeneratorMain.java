@@ -26,8 +26,15 @@ public final class GeneratorMain implements Callable<Integer> {
     @Option(names = "--stations-topic", defaultValue = "stations")
     String stationsTopic;
 
-    @Option(names = "--groups-topic", defaultValue = "groups")
-    String groupsTopic;
+    @Option(names = "--db-url", defaultValue = "jdbc:postgresql://localhost:5432/chargemon",
+            description = "Postgres holding station_groups (groups reach Kafka via Debezium)")
+    String dbUrl;
+
+    @Option(names = "--db-user", defaultValue = "chargemon")
+    String dbUser;
+
+    @Option(names = "--db-password", defaultValue = "chargemon")
+    String dbPassword;
 
     @Option(names = "--stations", defaultValue = "100", description = "number of simulated stations")
     int stations;
@@ -48,7 +55,7 @@ public final class GeneratorMain implements Callable<Integer> {
     @Option(names = "--speedup", defaultValue = "1", description = "simulated seconds per wall second")
     int speedup;
 
-    @Option(names = "--seed-master", defaultValue = "false", description = "publish station + group master data first")
+    @Option(names = "--seed-master", defaultValue = "false", description = "seed groups (Postgres) + stations (Kafka) first")
     boolean seedMaster;
 
     @Option(names = "--seed", defaultValue = "42")
@@ -63,7 +70,8 @@ public final class GeneratorMain implements Callable<Integer> {
         try (Publisher publisher = new Publisher(bootstrap)) {
             Fleet fleet = Fleet.build(stations, profiles, v16Ratio, seed);
             if (seedMaster) {
-                publisher.publishMasterData(fleet, stationsTopic, groupsTopic);
+                new GroupSeeder(dbUrl, dbUser, dbPassword).seed(fleet);
+                publisher.publishStations(fleet, stationsTopic);
             }
             new Simulation(fleet, publisher, topic, rate, speedup).run(duration);
         }

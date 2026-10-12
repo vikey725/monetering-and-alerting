@@ -65,7 +65,6 @@ public final class TopologyBuilder {
         DataStream<StationRecord> stations = sources.stations(env);
         DataStream<GroupRecord> groups = sources.groups(env);
         sinks.stationMirror(stations);
-        sinks.groupMirror(groups);
 
         // ---- decode + correlate ----
         // Decode inherits the source parallelism so it chains (forward partitioning): per-partition order

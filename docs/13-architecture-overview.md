@@ -204,11 +204,14 @@ above.
   [`RuleLoader`](../flink-processor/src/main/java/com/chargemon/flink/control/RuleLoader.java)
   first reads a full snapshot of the compacted topic, so no event is ever evaluated with an
   empty rule set.
+- **Groups** are rows in the Postgres table `station_groups`; a second Debezium connector
+  (`groups-cdc`, [`deploy/debezium/groups-connector.json`](../deploy/debezium/groups-connector.json))
+  streams them to the compacted topic `groups`, keyed by `group_id`.
 - **Stations** and **groups** arrive on the compacted topics `stations` and `groups`. The
   `enrich` operator keeps the latest station record in keyed state and the whole group tree in
   broadcast state, and stamps every event with the station's vendor, model, attributes and the
-  transitive list of group ids. The same two streams are mirrored into Postgres by JDBC sinks
-  that call `upsert_station(jsonb)` and `upsert_group(jsonb)`.
+  transitive list of group ids. The station stream is mirrored into Postgres by a JDBC sink
+  that calls `upsert_station(jsonb)`. Groups are not mirrored back (that would loop through CDC).
 
 ### Subjects and the alert key
 
@@ -233,7 +236,7 @@ From [`deploy/docker-compose.yml`](../deploy/docker-compose.yml) (topic creation
 |---|---|---|---|---|
 | `common-broker` (`TOPIC_EVENTS`) | station id | delete | upstream CSMS / event-generator | `decode` |
 | `stations` (`TOPIC_STATIONS`) | station id | compact | registry / generator `--seed-master` | `enrich`, station mirror sink |
-| `groups` (`TOPIC_GROUPS`) | group id | compact | registry / generator | `enrich` (broadcast), group mirror sink |
+| `groups` (`TOPIC_GROUPS`) | group id | compact | Debezium from Postgres `station_groups` | `enrich` (broadcast) |
 | `rules` (`TOPIC_RULES`) | rule id (uuid) | compact | Debezium from Postgres | broadcast to all rule + lifecycle operators |
 | `alerts` (`TOPIC_ALERTS`) | alert key | delete | Kafka alerts sink | notifier |
 | `dead-letter` (`TOPIC_DEAD_LETTER`) | source ref | delete | `decode` side output | humans / tooling |
@@ -251,7 +254,7 @@ and run through Flyway (chapter 03 shows how `SchemaMigrator` is invoked).
 | Migration | Table(s) | Written by | Read by |
 |---|---|---|---|
 | [V001](../schema/src/main/resources/db/migration/V001__stations.sql) | `stations` | Flink JDBC mirror via `upsert_station` | humans, dashboards |
-| [V002](../schema/src/main/resources/db/migration/V002__station_groups.sql) | `station_groups`, `station_group_members`, procedures `upsert_station`, `upsert_group` | Flink JDBC mirror | humans, dashboards |
+| [V002](../schema/src/main/resources/db/migration/V002__station_groups.sql) | `station_groups`, `station_group_members`, procedures `upsert_station`, `upsert_group` | stations: Flink JDBC mirror; groups: generator `--seed-master` / admin SQL (`upsert_group`) | Debezium (`station_groups`), humans, dashboards |
 | [V003](../schema/src/main/resources/db/migration/V003__rules.sql) | `rules` (+ `rules_bump_version` trigger, `REPLICA IDENTITY FULL`) | humans / admin SQL | Debezium |
 | [V004](../schema/src/main/resources/db/migration/V004__alerts.sql) | `alerts` | Flink JDBC sink (`ON CONFLICT ... WHERE alerts.last_seq < EXCLUDED.last_seq`); humans set `acked_*` | dashboards |
 | [V005](../schema/src/main/resources/db/migration/V005__zero_energy.sql) | `zero_energy_aggregates`, `zero_energy_rolling` | Flink JDBC sink | dashboards |
@@ -346,7 +349,7 @@ and shipped to every operator as a serializable record. Defaults, verbatim from 
 | `KAFKA_GROUP` | `chargemon-processor` | event source consumer group |
 | `TOPIC_EVENTS` | `common-broker` | `decode` source |
 | `TOPIC_STATIONS` | `stations` | `enrich`, mirror sink |
-| `TOPIC_GROUPS` | `groups` | `enrich`, mirror sink |
+| `TOPIC_GROUPS` | `groups` | `enrich` |
 | `TOPIC_RULES` | `rules` | rule broadcast, `RuleLoader` |
 | `TOPIC_ALERTS` | `alerts` | alerts Kafka sink |
 | `TOPIC_DEAD_LETTER` | `dead-letter` | decode side output sink |

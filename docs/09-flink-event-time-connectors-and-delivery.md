@@ -178,8 +178,9 @@ WHERE alerts.last_seq < EXCLUDED.last_seq
 A replayed `OPENED` (seq 1) arriving after `RESOLVED` (seq 2) is a no-op; a duplicate of the
 same seq is a no-op. Aggregate rows use `WHERE ... as_of <= EXCLUDED.as_of` the same way, split
 into a `zero_energy_aggregates` table (tumbling windows, history kept) and `zero_energy_rolling`
-(latest value per window). Station and group mirrors call the stored procedures
-`upsert_station` / `upsert_group` with the record as JSON
+(latest value per window). The station mirror calls the stored procedure
+`upsert_station` with the record as JSON (groups are not mirrored: `station_groups` is their source,
+and Debezium streams it to Kafka)
 ([`V002__station_groups.sql`](../schema/src/main/resources/db/migration/V002__station_groups.sql)).
 
 ### The idempotent consumer: the notifier ledger

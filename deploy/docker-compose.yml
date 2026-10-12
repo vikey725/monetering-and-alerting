@@ -118,7 +118,10 @@ services:
       - |
         curl -sf -X PUT -H 'Content-Type: application/json' \
           --data @/debezium/rules-connector.json http://connect:8083/connectors/rules-cdc/config
+        curl -sf -X PUT -H 'Content-Type: application/json' \
+          --data @/debezium/groups-connector.json http://connect:8083/connectors/groups-cdc/config
         echo; curl -s http://connect:8083/connectors/rules-cdc/status
+        echo; curl -s http://connect:8083/connectors/groups-cdc/status
 
   jobmanager:
     build:
@@ -200,8 +203,10 @@ services:
     depends_on:
       topic-init: { condition: service_completed_successfully }
       rules-init: { condition: service_completed_successfully }
+      connector-init: { condition: service_completed_successfully }
     command:
       - --bootstrap=kafka:19092
+      - --db-url=jdbc:postgresql://postgres:5432/chargemon
       - --stations=200
       - --rate=100
       - --profiles=normal,heartbeat-drop,stuck-preparing,zero-energy,boot-rejected,call-error

@@ -9,7 +9,6 @@ import com.chargemon.rules.window.WindowSpec;
 import java.time.ZoneOffset;
 import java.util.List;
 import org.apache.flink.api.common.typeinfo.Types;
-import com.chargemon.ocpp.model.station.GroupRecord;
 import com.chargemon.ocpp.model.station.StationRecord;
 import org.apache.flink.streaming.api.datastream.DataStream;
 
@@ -40,11 +39,6 @@ public final class ProductionSinks implements Sinks {
     @Override
     public void stationMirror(DataStream<StationRecord> stations) {
         stations.sinkTo(jdbc.stationMirror()).uid("sink-stations-jdbc").name("stations -> postgres");
-    }
-
-    @Override
-    public void groupMirror(DataStream<GroupRecord> groups) {
-        groups.sinkTo(jdbc.groupMirror()).uid("sink-groups-jdbc").name("groups -> postgres");
     }
 
     @Override

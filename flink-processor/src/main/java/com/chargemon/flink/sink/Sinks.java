@@ -4,7 +4,6 @@ import com.chargemon.alert.AlertEvent;
 import com.chargemon.flink.aggregate.LateSession;
 import com.chargemon.flink.decode.DeadLetter;
 import com.chargemon.flink.model.AggregateSnapshot;
-import com.chargemon.ocpp.model.station.GroupRecord;
 import com.chargemon.ocpp.model.station.StationRecord;
 import org.apache.flink.streaming.api.datastream.DataStream;
 
@@ -16,8 +15,6 @@ public interface Sinks {
     void deadLetters(DataStream<DeadLetter> deadLetters);
 
     void stationMirror(DataStream<StationRecord> stations);
-
-    void groupMirror(DataStream<GroupRecord> groups);
 
     void aggregates(DataStream<AggregateSnapshot> snapshots);
 
